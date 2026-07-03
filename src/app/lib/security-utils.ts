@@ -15,7 +15,8 @@ export function isSafeUrl(url: string): boolean {
       return false;
     }
 
-    const hostname = parsed.hostname;
+    // Strip brackets and normalise IPv4-mapped IPv6 before all checks
+    const hostname = canonicalizeHost(parsed.hostname);
 
     // Block localhost and metadata services explicitly
     if (
@@ -41,16 +42,60 @@ export function isSafeUrl(url: string): boolean {
       return false;
     }
 
-    // IPv6 Private Ranges (FC00::/7 Unique Local, FE80::/10 Link-Local)
-    const privateIpv6Regex = /^(fc|fd|fe[8-9a-b]).*:/i;
+    // IPv6 Private Ranges — check on unbracketed value
+    // ::1 (loopback), FC00::/7 (Unique Local), FE80::/10 (Link-Local)
+    const privateIpv6Regex = /^(::1$|fc|fd|fe[8-9a-b])/i;
     if (privateIpv6Regex.test(hostname)) {
       return false;
+    }
+
+    // Catch any remaining IPv6 literal that wasn't reduced to dotted IPv4:
+    // unspecified (::), loopback (::1), and any residual ::ffff: form.
+    if (hostname.includes(":")) {
+      if (
+        hostname === "::" ||
+        hostname === "::1" ||
+        hostname.startsWith("::ffff:")
+      ) {
+        return false;
+      }
     }
 
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Canonicalizes a WHATWG URL.hostname into a comparable host string.
+ *
+ * URL.hostname keeps IPv6 brackets and hex-compresses addresses, so string
+ * comparisons like `=== "::1"` and dotted-decimal IPv4 regexes never match.
+ * This strips the brackets and reduces IPv4-mapped IPv6 (both dotted and
+ * hex-compressed forms) back to dotted IPv4 so private-range checks apply.
+ *
+ * Runs in the Edge runtime — no Node built-ins used.
+ */
+function canonicalizeHost(hostname: string): string {
+  // Strip IPv6 literal brackets.
+  let host = hostname.replace(/^\[/, "").replace(/\]$/, "").toLowerCase();
+
+  // Unmap IPv4-mapped / IPv4-compatible IPv6 (::ffff:a.b.c.d, ::a.b.c.d).
+  const mappedDotted = host.match(/^::(?:ffff:)?(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (mappedDotted) {
+    return mappedDotted[1];
+  }
+
+  // Unmap hex-compressed mapped form (::ffff:7f00:1 -> 127.0.0.1).
+  const mappedHex = host.match(/^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (mappedHex) {
+    const a = parseInt(mappedHex[1], 16);
+    const b = parseInt(mappedHex[2], 16);
+    return `${a >> 8}.${a & 0xff}.${b >> 8}.${b & 0xff}`;
+  }
+
+  return host;
 }
 
 /**

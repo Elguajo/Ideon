@@ -10,6 +10,7 @@ and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - Fixed a privilege escalation vulnerability ([GHSA-v3qr-4v8m-29rh](https://github.com/3xpyth0n/ideon/security/advisories/GHSA-v3qr-4v8m-29rh)) where a read-only collaborator could perform write and delete operations on a project, including wiping and replacing the entire canvas. Reported by [@tonghuaroot](https://github.com/tonghuaroot).
+- Fixed an SSRF bypass ([GHSA-cvcr-fcf6-366r](https://github.com/3xpyth0n/ideon/security/advisories/GHSA-cvcr-fcf6-366r)) in the image proxy where IPv4-mapped IPv6 addresses (e.g. `[::ffff:7f00:1]`) could bypass the private IP blocklist and reach internal services. Reported by [@tonghuaroot](https://github.com/tonghuaroot).
 
 ## [0.9.3] - 2026-07-01
 
