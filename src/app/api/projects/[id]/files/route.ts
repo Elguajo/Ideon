@@ -6,49 +6,52 @@ import { NextResponse } from "next/server";
 import { existsSync } from "fs";
 import { sanitizeFileName } from "@lib/file-utils";
 
-export const POST = projectAction(async (req, { project }) => {
-  const formData = await req.formData();
-  const file = formData.get("file") as File;
+export const POST = projectAction(
+  async (req, { project }) => {
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
 
-  if (!file) {
-    throw { status: 400, message: "No file uploaded" };
-  }
-
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  const projectStorageDir = join(
-    process.cwd(),
-    "storage",
-    "uploads",
-    `project-${project.id}`,
-  );
-
-  try {
-    if (!existsSync(projectStorageDir)) {
-      await mkdir(projectStorageDir, { recursive: true });
+    if (!file) {
+      throw { status: 400, message: "No file uploaded" };
     }
 
-    // Security: Sanitize filename to prevent directory traversal
-    const safeFileName = sanitizeFileName(file.name);
-    const filePath = join(projectStorageDir, safeFileName);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    await writeFile(filePath, buffer);
+    const projectStorageDir = join(
+      process.cwd(),
+      "storage",
+      "uploads",
+      `project-${project.id}`,
+    );
 
-    return {
-      success: true,
-      name: safeFileName,
-      size: file.size,
-      type: file.type,
-    };
-  } catch (error) {
-    logger.error({ error, projectId: project.id }, "File upload error");
-    throw {
-      status: 500,
-      message: "File upload error.",
-    };
-  }
-});
+    try {
+      if (!existsSync(projectStorageDir)) {
+        await mkdir(projectStorageDir, { recursive: true });
+      }
+
+      // Security: Sanitize filename to prevent directory traversal
+      const safeFileName = sanitizeFileName(file.name);
+      const filePath = join(projectStorageDir, safeFileName);
+
+      await writeFile(filePath, buffer);
+
+      return {
+        success: true,
+        name: safeFileName,
+        size: file.size,
+        type: file.type,
+      };
+    } catch (error) {
+      logger.error({ error, projectId: project.id }, "File upload error");
+      throw {
+        status: 500,
+        message: "File upload error.",
+      };
+    }
+  },
+  { minRole: "editor" },
+);
 
 export const GET = projectAction(async (req, { project }) => {
   const { searchParams } = new URL(req.url);
@@ -109,35 +112,38 @@ export const GET = projectAction(async (req, { project }) => {
   });
 });
 
-export const DELETE = projectAction(async (req, { project }) => {
-  const { searchParams } = new URL(req.url);
-  const rawFileName = searchParams.get("name");
+export const DELETE = projectAction(
+  async (req, { project }) => {
+    const { searchParams } = new URL(req.url);
+    const rawFileName = searchParams.get("name");
 
-  if (!rawFileName) {
-    throw { status: 400, message: "File name is required" };
-  }
-
-  // Security: Sanitize filename to prevent deleting arbitrary files
-  const fileName = sanitizeFileName(rawFileName);
-
-  const filePath = join(
-    process.cwd(),
-    "storage",
-    "uploads",
-    `project-${project.id}`,
-    fileName,
-  );
-
-  try {
-    if (existsSync(filePath)) {
-      await unlink(filePath);
+    if (!rawFileName) {
+      throw { status: 400, message: "File name is required" };
     }
-    return { success: true };
-  } catch (error) {
-    logger.error(
-      { error, filePath, projectId: project.id },
-      "Error deleting file",
+
+    // Security: Sanitize filename to prevent deleting arbitrary files
+    const fileName = sanitizeFileName(rawFileName);
+
+    const filePath = join(
+      process.cwd(),
+      "storage",
+      "uploads",
+      `project-${project.id}`,
+      fileName,
     );
-    throw { status: 500, message: "Failed to delete file" };
-  }
-});
+
+    try {
+      if (existsSync(filePath)) {
+        await unlink(filePath);
+      }
+      return { success: true };
+    } catch (error) {
+      logger.error(
+        { error, filePath, projectId: project.id },
+        "Error deleting file",
+      );
+      throw { status: 500, message: "Failed to delete file" };
+    }
+  },
+  { minRole: "editor" },
+);

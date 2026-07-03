@@ -349,5 +349,5 @@ export const POST = projectAction(
 
     return { success: true };
   },
-  { schema: postSchema },
+  { schema: postSchema, minRole: "editor" },
 );
