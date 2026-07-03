@@ -29,6 +29,8 @@ interface ActionOptions<B> {
   schema?: z.ZodSchema<B>;
   requiredRole?: AuthUser["role"];
   requireUser?: boolean;
+  /** Minimum project role required to call this handler. Roles in ascending order: viewer < editor < owner < creator. */
+  minRole?: ProjectRole;
 }
 
 export function authenticatedAction<T, B = unknown>(
@@ -278,6 +280,18 @@ export function projectAction<T, B = unknown>(
 
     if (!role) {
       throw { status: 403, message: "Forbidden" };
+    }
+
+    if (options?.minRole) {
+      const roleHierarchy: Record<ProjectRole, number> = {
+        viewer: 1,
+        editor: 2,
+        owner: 3,
+        creator: 4,
+      };
+      if (roleHierarchy[role] < roleHierarchy[options.minRole]) {
+        throw { status: 403, message: "Forbidden: insufficient project role" };
+      }
     }
 
     return handler(req, { params, user: currentUser, project, role, body });
