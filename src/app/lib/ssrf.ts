@@ -16,6 +16,9 @@ export async function validateSafeUrl(url: string): Promise<boolean> {
     if (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "::" ||
+      hostname === "::0" ||
       hostname === "::1" ||
       hostname.startsWith("192.168.") ||
       hostname.startsWith("10.") ||
@@ -60,6 +63,7 @@ function isPrivateIP(ip: string): boolean {
     if (parts[0] === 192 && parts[1] === 168) return true;
     if (parts[0] === 127) return true;
     if (parts[0] === 169 && parts[1] === 254) return true;
+    if (parts[0] === 0) return true; // 0.0.0.0/8 — routes to loopback on Linux
   }
 
   // IPv6 Private Ranges
@@ -67,7 +71,7 @@ function isPrivateIP(ip: string): boolean {
   // fc00::/7 (Unique Local Address)
   // fe80::/10 (Link-local)
   if (ip.includes(":")) {
-    if (ip === "::1") return true;
+    if (ip === "::" || ip === "::0" || ip === "::1") return true;
     if (ip.toLowerCase().startsWith("fc") || ip.toLowerCase().startsWith("fd"))
       return true;
     if (ip.toLowerCase().startsWith("fe80")) return true;
