@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The Ideon project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 and uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.5] - 2026-07-10
+
+### Security
+
+- Fixed an unauthenticated SSRF relay ([GHSA-vpc2-r395-534p](https://github.com/3xpyth0n/ideon/security/advisories/GHSA-vpc2-r395-534p)) where the `/api/links/preview` endpoint accepted requests without a valid session, allowing anyone to use the server as an anonymous outbound HTTP relay. The endpoint now requires authentication. Additionally, closed a gap in the SSRF blocklist where `0.0.0.0` (and IPv6 `::` / `::0`) was not blocked — on Linux these addresses route to the loopback interface at the kernel level. Reported by [@de3erve](https://github.com/de3erve).
+
 ## [0.9.4] - 2026-07-03
 
 ### Security

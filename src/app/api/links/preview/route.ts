@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { fetchLinkMetadata } from "@lib/services/metadata";
+import { getAuthUser } from "@auth";
 
 export async function POST(req: Request) {
   try {
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { url } = await req.json();
 
     if (!url) {
