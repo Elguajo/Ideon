@@ -45,36 +45,76 @@ export async function validateSafeUrl(url: string): Promise<boolean> {
 
 /**
  * Checks if an IP address is private/internal.
- * Supports IPv4 and IPv6.
+ * Supports IPv4 and all IPv6 transition mechanisms (mapped, NAT64, 6to4, Teredo).
  */
 function isPrivateIP(ip: string): boolean {
-  // IPv4 Private Ranges
-  // 10.0.0.0/8
-  // 172.16.0.0/12
-  // 192.168.0.0/16
-  // 127.0.0.0/8 (Loopback)
-  // 169.254.0.0/16 (Link-local)
-  if (ip.includes(".")) {
+  // IPv4 private ranges — pure IPv4 only (no colon)
+  if (ip.includes(".") && !ip.includes(":")) {
     const parts = ip.split(".").map(Number);
-    if (parts.length !== 4) return false;
+    if (parts.length !== 4 || parts.some((p) => isNaN(p))) return false;
 
+    if (parts[0] === 0) return true;
     if (parts[0] === 10) return true;
-    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-    if (parts[0] === 192 && parts[1] === 168) return true;
     if (parts[0] === 127) return true;
     if (parts[0] === 169 && parts[1] === 254) return true;
-    if (parts[0] === 0) return true; // 0.0.0.0/8 — routes to loopback on Linux
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    return false;
   }
 
-  // IPv6 Private Ranges
-  // ::1 (Loopback)
-  // fc00::/7 (Unique Local Address)
-  // fe80::/10 (Link-local)
   if (ip.includes(":")) {
-    if (ip === "::" || ip === "::0" || ip === "::1") return true;
-    if (ip.toLowerCase().startsWith("fc") || ip.toLowerCase().startsWith("fd"))
+    const lower = ip.toLowerCase();
+
+    // Unspecified / loopback
+    if (lower === "::" || lower === "::0" || lower === "::1") return true;
+
+    // ULA (fc00::/7) and link-local (fe80::/10)
+    if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
+    if (lower.startsWith("fe80")) return true;
+
+    // Multicast (ff00::/8)
+    if (lower.startsWith("ff")) return true;
+
+    // IPv4-mapped ::ffff:x.x.x.x or ::ffff:xxxx:xxxx
+    if (lower.startsWith("::ffff:")) {
+      const tail = lower.slice(7);
+      if (tail.includes(".")) return isPrivateIP(tail);
+      const parts = tail.split(":");
+      if (parts.length === 2) {
+        const hi = parseInt(parts[0], 16);
+        const lo = parseInt(parts[1], 16);
+        return isPrivateIP(
+          `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`,
+        );
+      }
+    }
+
+    // NAT64 well-known 64:ff9b::/96 (RFC 6052) and local-use 64:ff9b:1::/48 (RFC 8215)
+    const nat64Match = lower.match(
+      /^64:ff9b(?::1)?::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/,
+    );
+    if (nat64Match) {
+      const hi = parseInt(nat64Match[1], 16);
+      const lo = parseInt(nat64Match[2], 16);
+      return isPrivateIP(
+        `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`,
+      );
+    }
+
+    // 6to4 2002::/16 (RFC 3056) — IPv4 embedded in bits 16–47
+    const sixto4Match = lower.match(/^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4}):/);
+    if (sixto4Match) {
+      const hi = parseInt(sixto4Match[1], 16);
+      const lo = parseInt(sixto4Match[2], 16);
+      return isPrivateIP(
+        `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`,
+      );
+    }
+
+    // Teredo 2001:0000::/32 (RFC 4380) — block entire prefix
+    if (lower.startsWith("2001:0000:") || lower.startsWith("2001:0:")) {
       return true;
-    if (ip.toLowerCase().startsWith("fe80")) return true;
+    }
   }
 
   return false;
