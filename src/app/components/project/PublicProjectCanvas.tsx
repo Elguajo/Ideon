@@ -329,7 +329,7 @@ function PublicProjectCanvasContent({
         onMove={onMove}
         onKeyDown={onKeyDown}
         onPaneClick={onPaneClick}
-        panOnScroll
+        zoomOnScroll
         panOnDrag
         className="project-canvas preview-mode"
         proOptions={{ hideAttribution: true }}

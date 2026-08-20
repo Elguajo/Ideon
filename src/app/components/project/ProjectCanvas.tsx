@@ -6,6 +6,8 @@ import {
   ReactFlowProvider,
   ControlButton,
   Panel,
+  Background,
+  BackgroundVariant,
   ConnectionMode,
   useReactFlow as useReactFlowHook,
   Node,
@@ -1344,41 +1346,6 @@ function ProjectCanvasContent({ initialProjectId }: ProjectCanvasProps) {
     },
   });
 
-  useEffect(() => {
-    const container = flowContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const { x, y, zoom } = getViewport();
-        const delta = -e.deltaY;
-        const sensitivity = 0.01; // Boosted
-        const factor = Math.pow(2, delta * sensitivity);
-        const nextZoom = Math.min(Math.max(zoom * factor, 0.1), 4);
-
-        if (nextZoom === zoom) return;
-
-        const rect = container.getBoundingClientRect();
-        const centerX = e.clientX - rect.left;
-        const centerY = e.clientY - rect.top;
-
-        const flowX = (centerX - x) / zoom;
-        const flowY = (centerY - y) / zoom;
-
-        const nextX = centerX - flowX * nextZoom;
-        const nextY = centerY - flowY * nextZoom;
-
-        setViewport({ x: nextX, y: nextY, zoom: nextZoom }, { duration: 0 });
-      }
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [getViewport, setViewport]);
-
   const [dontAskAgain, setDontAskAgain] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
@@ -1827,6 +1794,7 @@ function ProjectCanvasContent({ initialProjectId }: ProjectCanvasProps) {
                     onEdgeDoubleClick={onLinkDoubleClick}
                     onMove={onMove}
                     onViewportChange={onViewportChange}
+                    zoomOnScroll
                     zoomOnPinch={true}
                     zoomOnDoubleClick={false}
                     nodeTypes={blockTypes}
@@ -1845,7 +1813,6 @@ function ProjectCanvasContent({ initialProjectId }: ProjectCanvasProps) {
                     nodesConnectable={!isReadOnly}
                     elementsSelectable={true}
                     edgesReconnectable={!isReadOnly}
-                    panOnScroll
                     panOnDrag={true}
                     multiSelectionKeyCode="Control"
                     fitView
@@ -1880,7 +1847,13 @@ function ProjectCanvasContent({ initialProjectId }: ProjectCanvasProps) {
                         <HelperLines helperLines={helperLines} />
                       </Panel>
                     )}
-                    {/* Background disabled to prevent global rasterization blur */}
+                    <Background
+                      variant={BackgroundVariant.Dots}
+                      gap={24}
+                      size={1.2}
+                      color="var(--text-muted)"
+                      className="project-canvas-dots"
+                    />
 
                     {!hasSeenOnboarding && isCoreOnly && !isPreviewMode && (
                       <Panel

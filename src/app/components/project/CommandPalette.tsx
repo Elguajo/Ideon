@@ -52,6 +52,7 @@ export default function CommandPalette({
       { label: dict.canvas.AddBlock, keys: ["Ctrl", "A"] },
       { label: dict.canvas.zoomIn, keys: ["Ctrl", "+"] },
       { label: dict.canvas.zoomOut, keys: ["Ctrl", "-"] },
+      { label: dict.canvas.cheatZoomWithScroll, keys: ["Scroll"] },
       { label: dict.canvas.fitView, keys: ["Ctrl", "0"] },
       { label: dict.canvas.cheatMultiSelect, keys: ["Ctrl", "Click"] },
       { label: dict.canvas.cheatDisableSnap, keys: ["Shift", "(drag)"] },

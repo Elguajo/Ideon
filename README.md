@@ -87,10 +87,11 @@ Edit `.env` and set at minimum `SECRET_KEY` (generate with `openssl rand -hex 32
 **3. Start the stack**
 
 ```bash
-docker compose up -d
+npm run dev
 ```
 
-Once running, access the dashboard at: `http://localhost:3000`
+The launcher selects a free port from the `4000–7999` range and prints it,
+for example: `http://localhost:4000`.
 
 ## Contributing
 

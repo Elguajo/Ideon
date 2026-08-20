@@ -360,6 +360,7 @@
     "cheatUnderline": "Underline",
     "cheatUnfocus": "Unfocus all",
     "cheatVimNav": "Navigate (Vim)",
+    "cheatZoomWithScroll": "Zoom canvas",
     "cleanupLayout": "Cleanup Layout",
     "coreBlockPlaceholder": "Paste a link or drop an image to get started...",
     "fitView": "Fit View",

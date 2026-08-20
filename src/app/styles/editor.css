@@ -122,6 +122,15 @@
 .project-canvas {
 }
 
+/* Subtle FigJam-like spatial reference that follows the React Flow viewport. */
+.project-canvas-dots {
+  opacity: 0.22;
+}
+
+[data-theme="dark"] .project-canvas-dots {
+  opacity: 0.3;
+}
+
 .project-canvas .react-flow__pane {
   touch-action: none;
 }

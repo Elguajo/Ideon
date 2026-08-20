@@ -4,6 +4,10 @@ services:
     container_name: ideon-app
     env_file:
       - ${ENV_FILE:-.env}
+    environment:
+      # compose.sh provides an available non-3000 port for local launches.
+      APP_PORT: ${APP_PORT:-3000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
     # environment:
     # PUID: 1000 # Optional: User ID for file ownership (default: 1001)
     # PGID: 1000 # Optional: Group ID for file ownership (default: 1001)
